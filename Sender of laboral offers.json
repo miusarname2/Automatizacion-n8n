@@ -1,0 +1,227 @@
+{
+  "name": "Sender of laboral offers",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "dabb72fb-6ae0-41fa-ad0e-d613922f047a",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        176
+      ],
+      "id": "a28b22a9-8007-463b-a1c5-ca8880e98b5a",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "https://www.getonbrd.com/empleos-fullstack",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        288,
+        96
+      ],
+      "id": "c1a01fa9-b37a-4437-ab7e-362b09271a15",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "links",
+              "cssSelector": ".gb-results-list__item",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            },
+            {
+              "key": "title",
+              "cssSelector": ".gb-results-list__title",
+              "returnArray": true
+            },
+            {
+              "key": "Companies",
+              "cssSelector": ".size0 strong",
+              "returnArray": true
+            },
+            {
+              "key": "dates",
+              "cssSelector": ".opacity-half.size0",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        496,
+        96
+      ],
+      "id": "e9bf03ea-a1eb-4340-942e-c7da42ac247d",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "jsCode": "const today = new Date();\nconst ago = new Date(today);\n\nago.setDate(today.getDate() - 20);\n\nconst months = {\n  \"ene\": \"jan\",\n  \"feb\": \"feb\",\n  \"mar\": \"mar\",\n  \"abr\": \"apr\",\n  \"may\": \"may\",\n  \"jun\": \"jun\",\n  \"jul\": \"jul\",\n  \"ago\": \"aug\",\n  \"sep\": \"sep\",\n  \"oct\": \"oct\",\n  \"nov\": \"nov\",\n  \"dic\": \"dec\"\n};\n\nconst { links,title,Companies,dates } =$input.first().json;\n\nconst data = [];\n\nfor (const idx of links.keys()) {\n  let clean = dates[idx].trim().toLowerCase();\n  let splitted = clean.split(\" \");\n  if (Object.keys(months).includes(splitted[0])) {\n    clean = months[splitted[0]] + \" \" + splitted[1];\n  }\n\n  const jobDate = new Date(clean);\n  jobDate.setFullYear(ago.getFullYear());\n  if (jobDate >= ago && jobDate <= today) {\n    data.push({\n      title: title[idx],\n      link: links[idx],\n      date: clean\n    })\n  }\n}\n\n\n\nreturn data;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        96
+      ],
+      "id": "f3f43217-6c37-4c29-897f-23cfc4cdf0b8",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        912,
+        96
+      ],
+      "id": "14f75bfa-1474-4c43-bd9d-22c676a9d6ce",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "1206784516442820628",
+          "mode": "id"
+        },
+        "sendTo": "user",
+        "userId": {
+          "__rl": true,
+          "value": "809015116175376414",
+          "mode": "id"
+        },
+        "content": "=Nombre de oferta:{{ $json.title }}\nLink: {{ $json.link }}\nFeach: {{ $json.date }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        96
+      ],
+      "id": "b09495ae-d526-4e6b-888f-00611c8a11df",
+      "name": "Send a message",
+      "webhookId": "3b69a2b6-30ad-4e57-919a-5636f894872f",
+      "credentials": {
+        "discordBotApi": {
+          "id": "1UpxG30caSyDQaoh",
+          "name": "Discord Bot account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "d8081d32-e798-407f-ab40-b201ff41984a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b4ce499dd54e0958a9a7273d6b016310d08a100c93eb53087c344e754aea6959"
+  },
+  "id": "zalh8R1yo1fgZ_VfOcLes",
+  "tags": []
+}
